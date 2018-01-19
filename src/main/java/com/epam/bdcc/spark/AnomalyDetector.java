@@ -3,15 +3,29 @@ package com.epam.bdcc.spark;
 import com.epam.bdcc.htm.HTMNetwork;
 import com.epam.bdcc.htm.MonitoringRecord;
 import com.epam.bdcc.htm.ResultState;
+import com.epam.bdcc.kafka.KafkaHelper;
+import com.epam.bdcc.kafka.MonitoringRecordPartitioner;
 import com.epam.bdcc.utils.GlobalConstants;
 import com.epam.bdcc.utils.PropertiesLoader;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.Optional;
 import org.apache.spark.api.java.function.Function3;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.State;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaInputDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.streaming.kafka010.ConsumerStrategy;
+import org.apache.spark.streaming.kafka010.KafkaUtils;
+import org.apache.spark.streaming.kafka010.LocationStrategies;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import scala.Tuple2;
 
 import java.util.HashMap;
 import java.util.Properties;
@@ -38,8 +52,23 @@ public class AnomalyDetector implements GlobalConstants {
             final Duration batchDuration = Duration.apply(Long.parseLong(applicationProperties.getProperty(SPARK_BATCH_DURATION_CONFIG)));
             final Duration checkpointInterval = Duration.apply(Long.parseLong(applicationProperties.getProperty(SPARK_CHECKPOINT_INTERVAL_CONFIG)));
 
-            JavaStreamingContext jssc = null;
-            //TODO : Create your pipeline here!!!
+            SparkConf conf = new SparkConf().setMaster("local[*]").setAppName(appName);
+            JavaStreamingContext jssc = new JavaStreamingContext(conf, batchDuration);
+            jssc.checkpoint(checkpointDir);
+
+            JavaInputDStream<ConsumerRecord<String, MonitoringRecord>> inputDStream =
+                    KafkaUtils.createDirectStream(jssc, LocationStrategies.PreferConsistent(),
+                            KafkaHelper.createConsumerStrategy(rawTopicName));
+
+            inputDStream.checkpoint(checkpointInterval);
+
+            JavaDStream<MonitoringRecord> records = inputDStream.map(record -> record.value());
+
+            JavaPairDStream<String, MonitoringRecord> enrichedRecords =
+                    records.map(record -> new Tuple2<>(KafkaHelper.getKey(record),
+                            mappingFunc.call(KafkaHelper.getKey(record), record,
+                                    State[new HTMNetwork(KafkaHelper.getKey(record))])));
+
 
             jssc.start();
             jssc.awaitTermination();
