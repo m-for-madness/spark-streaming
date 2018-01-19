@@ -4,6 +4,7 @@ import com.epam.bdcc.htm.HTMNetwork;
 import com.epam.bdcc.htm.MonitoringRecord;
 import com.epam.bdcc.htm.ResultState;
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -29,7 +30,6 @@ public class SparkKryoHTMSerializer<T> extends Serializer<T> {
 
     @Override
     public T copy(Kryo kryo, T original) {
-        //TODO : Add implementation for clone, if needed
         return kryo.copy(original);
 
     }
@@ -41,20 +41,24 @@ public class SparkKryoHTMSerializer<T> extends Serializer<T> {
             writer.writeObject(t, HTMNetwork.class, MonitoringRecord.class, ResultState.class);
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (KryoException e) {
+            e.printStackTrace();
         }
     }
 
     @Override
     public T read(Kryo kryo, Input kryoInput, Class<T> aClass) {
-        //TODO : Add implementation for deserialization
 
         try (HTMObjectInput reader = new HTMObjectInput(kryoInput, FSTConfiguration.getDefaultConfiguration())) {
             reader.readObject(aClass);
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (KryoException e) {
+            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return null;
     }
 

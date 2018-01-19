@@ -5,6 +5,7 @@ import com.epam.bdcc.htm.MonitoringRecord;
 import com.epam.bdcc.htm.ResultState;
 import com.epam.bdcc.kafka.KafkaHelper;
 import com.epam.bdcc.kafka.MonitoringRecordPartitioner;
+import com.epam.bdcc.serde.SparkKryoHTMRegistrator;
 import com.epam.bdcc.utils.GlobalConstants;
 import com.epam.bdcc.utils.PropertiesLoader;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -52,7 +53,9 @@ public class AnomalyDetector implements GlobalConstants {
             final Duration batchDuration = Duration.apply(Long.parseLong(applicationProperties.getProperty(SPARK_BATCH_DURATION_CONFIG)));
             final Duration checkpointInterval = Duration.apply(Long.parseLong(applicationProperties.getProperty(SPARK_CHECKPOINT_INTERVAL_CONFIG)));
 
-            SparkConf conf = new SparkConf().setMaster("local[*]").setAppName(appName);
+            SparkConf conf = new SparkConf().setMaster("local[*]").setAppName(appName).set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+                    .set("spark.kryoserializer.buffer.mb","24")
+                    .set("spark.kryo.registrator", SparkKryoHTMRegistrator.class.getName());;
             JavaStreamingContext jssc = new JavaStreamingContext(conf, batchDuration);
             jssc.checkpoint(checkpointDir);
 

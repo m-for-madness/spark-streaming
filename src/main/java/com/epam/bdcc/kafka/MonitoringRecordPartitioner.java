@@ -17,23 +17,22 @@ public class MonitoringRecordPartitioner extends DefaultPartitioner {
 
     public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
         if (value instanceof MonitoringRecord) {
-            int partition;
             List<PartitionInfo> partitions = cluster.partitionsForTopic(topic);
             int numPartitions = partitions.size();
-            int sp = (int)Math.abs(numPartitions*0.3);
-            int p=0;
+            int sp = (int) Math.abs(numPartitions * 0.3);
+            int p = 0;
 
-            if ( (keyBytes == null) || (!(key instanceof String)) )
+            if ((keyBytes == null) || (!(key instanceof String)))
                 try {
-                    throw new Exception("All messages must have name as key");
+                    throw new Exception("All messages must have statecode, countrycode, poc,sitenum ,parameterCode as key");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
-            if ( ((String)key).equals(monitoringRecord))
-                p = Utils.toPositive(Utils.murmur2(valueBytes)) % sp;
+            if (((String) key).equals(monitoringRecord))
+                p = Utils.abs(Utils.murmur2(valueBytes)) % sp;
             else
-                p = Utils.toPositive(Utils.murmur2(keyBytes)) % (numPartitions-sp) + sp ;
+                p = Utils.abs(Utils.murmur2(keyBytes)) % (numPartitions - sp) + sp;
 
             return p;
         } else {
@@ -42,7 +41,6 @@ public class MonitoringRecordPartitioner extends DefaultPartitioner {
     }
 
     public void close() {
-
     }
 
     public void configure(Map<String, ?> map) {
