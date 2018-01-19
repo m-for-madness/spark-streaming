@@ -24,7 +24,11 @@ public class MonitoringRecordPartitioner extends DefaultPartitioner {
             int p=0;
 
             if ( (keyBytes == null) || (!(key instanceof String)) )
-                throw new Exception("All messages must have name as key");
+                try {
+                    throw new Exception("All messages must have name as key");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
             if ( ((String)key).equals(monitoringRecord))
                 p = Utils.toPositive(Utils.murmur2(valueBytes)) % sp;
@@ -42,6 +46,6 @@ public class MonitoringRecordPartitioner extends DefaultPartitioner {
     }
 
     public void configure(Map<String, ?> map) {
-        monitoringRecord = map.get("speed.sensor.name").toString();
+        monitoringRecord = map.get("10-001-0002-44201-1").toString();
     }
 }
