@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class MonitoringRecordPartitioner extends DefaultPartitioner {
     private static final Logger LOGGER = LoggerFactory.getLogger(MonitoringRecordPartitioner.class);
-    private String speedSensorName;
+    private String monitoringRecord;
 
     public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
         if (value instanceof MonitoringRecord) {
@@ -26,7 +26,7 @@ public class MonitoringRecordPartitioner extends DefaultPartitioner {
             if ( (keyBytes == null) || (!(key instanceof String)) )
                 throw new Exception("All messages must have name as key");
 
-            if ( ((String)key).equals(speedSensorName.) )
+            if ( ((String)key).equals(monitoringRecord))
                 p = Utils.toPositive(Utils.murmur2(valueBytes)) % sp;
             else
                 p = Utils.toPositive(Utils.murmur2(keyBytes)) % (numPartitions-sp) + sp ;
@@ -42,6 +42,6 @@ public class MonitoringRecordPartitioner extends DefaultPartitioner {
     }
 
     public void configure(Map<String, ?> map) {
-        speedSensorName = map.get("speed.sensor.name").toString();
+        monitoringRecord = map.get("speed.sensor.name").toString();
     }
 }
